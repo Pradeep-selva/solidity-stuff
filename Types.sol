@@ -5,7 +5,7 @@ library Types {
     struct Exhibit {
         address payable manager;
         string itemName;
-        uint256 endTime;
+        uint256 duration;
         uint256 bidAmount;
         address payable winner;
     }

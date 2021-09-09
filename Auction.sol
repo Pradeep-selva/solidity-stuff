@@ -4,6 +4,7 @@ pragma solidity  >=0.7.6;
 import "./Types.sol";
 
 contract Auction {
+    uint256 private constant  BLOCK_TIME = 15;
     mapping(uint256 => Types.Exhibit) private exhibits;
     uint256 public totalExhibits;
     
@@ -15,15 +16,15 @@ contract Auction {
         totalExhibits = 0;
     }
     
-    function createExhibit(string memory itemName, uint256 endTime) external validUser {
+    function createExhibit(string memory itemName, uint256 duration) external validUser {
         Types.Exhibit storage exhibit = exhibits[totalExhibits++];
         
         exhibit.manager = payable(msg.sender);
-        exhibit.endTime = endTime;
+        exhibit.duration = ((duration/BLOCK_TIME) + block.number) * BLOCK_TIME;
         exhibit.itemName= itemName;
         exhibit.bidAmount = 0;
         
-        emit Created(msg.sender, totalExhibits-1, endTime);
+        emit Created(msg.sender, totalExhibits-1, duration);
     }
     
     function bid(uint256 exhibitIndex) external payable highestBid(exhibitIndex) running(exhibitIndex) bidder(exhibitIndex) validUser {
@@ -52,13 +53,14 @@ contract Auction {
             string memory,
             uint256,
             address,
+            uint256,
             bool
     ) {
         address winner = address(0x0);
         bool hasEnded = false;
         Types.Exhibit memory exhibit = exhibits[exhibitIndex];
 
-        if(block.timestamp > exhibit.endTime) {
+        if(getDurationElapsed() > exhibit.duration) {
             winner = exhibit.winner;
             hasEnded = true;
         }
@@ -68,8 +70,13 @@ contract Auction {
             exhibit.itemName,
             exhibit.bidAmount,
             winner,
+            exhibit.duration,
             hasEnded
         );
+    }
+    
+    function getDurationElapsed() internal view returns (uint256) {
+        return block.number * BLOCK_TIME;
     }
     
     modifier highestBid(uint256 index) {
@@ -78,12 +85,12 @@ contract Auction {
     }
     
     modifier running(uint256 index) {
-        require(block.timestamp <= exhibits[index].endTime, "This exhibit has ended already.");
+        require(getDurationElapsed() <= exhibits[index].duration, "This exhibit has ended already.");
         _;
     }
     
     modifier complete(uint256 index) {
-        require(block.timestamp > exhibits[index].endTime, "This exhibit hasn't ended yet. Please wait.");
+        require(getDurationElapsed() > exhibits[index].duration, "This exhibit hasn't ended yet. Please wait.");
         _;
     }
     
