@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.1;
+pragma solidity  >=0.7.6;
 
 import "./Types.sol";
 
@@ -15,7 +15,7 @@ contract Auction {
         totalExhibits = 0;
     }
     
-    function createExhibit(string memory itemName, uint256 endTime) public validUser {
+    function createExhibit(string memory itemName, uint256 endTime) external validUser {
         Types.Exhibit storage exhibit = exhibits[totalExhibits++];
         
         exhibit.manager = payable(msg.sender);
@@ -26,25 +26,28 @@ contract Auction {
         emit Created(msg.sender, totalExhibits-1, endTime);
     }
     
-    function bid(uint256 exhibitIndex) public payable highestBid(exhibitIndex) running(exhibitIndex) bidder(exhibitIndex) validUser {
+    function bid(uint256 exhibitIndex) external payable highestBid(exhibitIndex) running(exhibitIndex) bidder(exhibitIndex) validUser {
         Types.Exhibit storage exhibit = exhibits[exhibitIndex];
         
-        exhibit.winner.transfer(exhibit.bidAmount);
+        uint256 transferAmount = exhibit.bidAmount;
+        address payable previousBidder = exhibit.winner;
         
         exhibit.bidAmount = msg.value;
         exhibit.winner = payable(msg.sender); 
         
         emit NewBid(msg.sender, exhibitIndex, msg.value);
+
+        previousBidder.transfer(transferAmount);
     }
     
-    function withdraw(uint256 exhibitIndex) public manager(exhibitIndex) complete(exhibitIndex) validUser {
+    function withdraw(uint256 exhibitIndex) external manager(exhibitIndex) complete(exhibitIndex) validUser {
         Types.Exhibit memory exhibit = exhibits[exhibitIndex];
-        exhibit.manager.transfer(exhibit.bidAmount);
-        
         emit Withdrawn(exhibit.manager, exhibitIndex, exhibit.bidAmount);
+        
+        exhibit.manager.transfer(exhibit.bidAmount);
     }
     
-    function getAuctionDetails(uint256 exhibitIndex) public view validUser returns (
+    function getAuctionDetails(uint256 exhibitIndex) external view validUser returns (
             address,
             string memory,
             uint256,
