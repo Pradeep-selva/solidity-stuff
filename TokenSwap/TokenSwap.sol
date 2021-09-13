@@ -4,6 +4,7 @@ pragma abicoder v2;
 
 import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
 import '@uniswap/v3-periphery/contracts/libraries/TransferHelper.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 contract TokenSwap {
     ISwapRouter public immutable swapRouter;
@@ -16,11 +17,17 @@ contract TokenSwap {
     constructor(ISwapRouter _swapRouter) {
         swapRouter = _swapRouter;
     }
+    
+    function getBTCBalance() public view returns (uint256) {
+        return IERC20(oWBTC).balanceOf(address(this));
+    }
+    
+    function getETHBalance() public view returns (uint256) {
+        return IERC20(oWETH).balanceOf(address(this));
+    }
 
     function swapExactInputSingle(uint256 amountIn) external returns (uint256 amountOut) {
-        TransferHelper.safeApprove(oWBTC, msg.sender, amountIn);
-        TransferHelper.safeTransferFrom(oWBTC, msg.sender, address(this), amountIn);
-        TransferHelper.safeApprove(oWBTC, address(swapRouter), amountIn);
+        IERC20(oWBTC).approve(address(swapRouter), amountIn);
 
         ISwapRouter.ExactInputSingleParams memory params =
             ISwapRouter.ExactInputSingleParams({
