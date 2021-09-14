@@ -29,7 +29,7 @@ contract TokenSwap {
         return IERC20(oWETH).balanceOf(address(this));
     }
 
-    function swapExactInputSingle(uint256 amountIn) external returns (uint256 amountOut) {
+   function swapExactInputSingle(uint256 amountIn) external returns (uint256 amountOut) {
         IERC20(oWBTC).approve(address(swapRouter), amountIn);
 
         ISwapRouter.ExactInputSingleParams memory params =
@@ -40,7 +40,7 @@ contract TokenSwap {
                 recipient: msg.sender,
                 deadline: block.timestamp,
                 amountIn: amountIn,
-                amountOutMinimum: 0,
+                amountOutMinimum: quoter.quoteExactInputSingle(oWBTC, oWETH, poolFee, amountIn, 0),
                 sqrtPriceLimitX96: 0
             });
 
